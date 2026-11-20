@@ -1,0 +1,63 @@
+export const frontmatter = {
+  title: "Matrix Reasoning Questions — How to Read a 3x3 Grid Puzzle",
+  description:
+    "A step-by-step method for solving matrix reasoning puzzles: check rows, then columns, then diagonals, before guessing.",
+  publishedAt: "2026-11-20",
+  updatedAt: "2026-11-20",
+  author: "The Cognitive Assessment Platform Team",
+  relatedCategorySlug: "pattern-recognition-test",
+};
+
+import Link from "next/link";
+import { MatrixDiagram } from "@/components/blog/MatrixDiagram";
+
+A matrix reasoning question shows a grid — usually 3×3 — with one cell
+missing, and asks what belongs there. These are the classic "IQ test"
+puzzle most people picture, popularized by tests like Raven's Progressive
+Matrices.
+
+## Step 1: scan each row for a rule
+
+<MatrixDiagram
+  rows={[
+    ["○", "○○", "○○○"],
+    ["□", "□□", "□□□"],
+    ["△", "△△", "?"],
+  ]}
+/>
+
+Look at row 1: one circle, two circles, three circles — the count
+increases by one moving right. Row 2 does the same with squares. Row 3
+should follow the identical rule with triangles: one, two, **three
+triangles**.
+
+## Step 2: if rows don't reveal it, check columns
+
+Sometimes the rule runs down columns instead of across rows — column 1
+might always be "empty," column 2 "half-filled," column 3 "fully
+filled," independent of what's in each row. If scanning rows doesn't
+reveal a consistent rule, re-scan column by column before concluding the
+puzzle is unsolvable by inspection.
+
+## Step 3: check for two rules at once
+
+Harder matrix items combine a row rule and a column rule simultaneously
+— for example, shape changes moving across a row while shading changes
+moving down a column. When a single rule doesn't account for every cell,
+assume two independent rules are overlapping and verify each separately
+against the grid you can see, rather than trying to hold both in your
+head at once.
+
+## Step 4: eliminate, don't just pattern-match
+
+Once you have a candidate answer in mind, check it against *every* row
+and column it belongs to, not just the one that suggested it — a
+distractor option is often designed to satisfy the row rule while
+violating the column rule, or vice versa.
+
+## Try it yourself
+
+Our <Link href="/pattern-recognition-test">pattern recognition test page</Link>{" "}
+has a free sample puzzle in exactly this style. It's one of 10 categories
+in the full assessment — <Link href="/register">take it</Link> to see your
+own breakdown.

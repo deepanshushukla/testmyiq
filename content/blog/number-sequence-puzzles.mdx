@@ -1,0 +1,61 @@
+export const frontmatter = {
+  title: "Number Sequence Puzzles — Patterns to Look For, With Examples",
+  description:
+    "How to solve number sequence puzzles systematically: arithmetic, geometric, and interleaved patterns, with worked examples of each.",
+  publishedAt: "2026-11-20",
+  updatedAt: "2026-11-20",
+  author: "The Cognitive Assessment Platform Team",
+  relatedCategorySlug: "numerical-reasoning-test",
+};
+
+import Link from "next/link";
+import { SequenceDiagram } from "@/components/blog/SequenceDiagram";
+
+A number sequence puzzle gives you a list of numbers with a hidden rule
+and asks for the next one. The fastest path to a reliable answer isn't
+guessing — it's checking a short list of standard patterns in order.
+
+## 1. Check the simple differences first
+
+<SequenceDiagram items={[2, 5, 8, 11, "?"]} />
+
+Subtract each term from the next: 5−2=3, 8−5=3, 11−8=3. A constant
+difference means it's a simple arithmetic sequence — add the same
+difference again: 11 + 3 = **14**.
+
+## 2. Check the ratios next
+
+<SequenceDiagram items={[3, 6, 12, 24, "?"]} />
+
+If the differences aren't constant, try dividing each term by the
+previous one: 6÷3=2, 12÷6=2, 24÷12=2. A constant ratio means it's
+geometric — multiply again: 24 × 2 = **48**.
+
+## 3. Check the differences of differences
+
+<SequenceDiagram items={[3, 6, 11, 18, 27, "?"]} />
+
+If neither is constant, look at the differences between terms (3, 5, 7,
+9) — if *those* form their own simple pattern (here, increasing by 2 each
+time), the next difference is 11, giving 27 + 11 = **38**. This is the
+same sample question featured on our{" "}
+<Link href="/numerical-reasoning-test">numerical reasoning test page</Link>.
+
+## 4. Check for two interleaved sequences
+
+<SequenceDiagram items={[1, 10, 2, 20, 3, "?"]} />
+
+Sometimes what looks like one sequence is really two, alternating:
+positions 1, 3, 5… form 1, 2, 3… and positions 2, 4, 6… form 10, 20, 30….
+The next term (position 6) continues the second sequence: **30**.
+
+## The general method
+
+Work through these checks in order — constant difference, constant
+ratio, second-order difference, then interleaving — before considering
+anything more exotic. Most sequence puzzles, including the ones in our
+own question bank, use one of these four patterns.
+
+<Link href="/register">Take the full assessment</Link> to try sequence
+puzzles under real timed conditions, alongside nine other reasoning
+categories.

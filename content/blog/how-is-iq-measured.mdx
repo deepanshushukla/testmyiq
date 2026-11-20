@@ -1,0 +1,77 @@
+export const frontmatter = {
+  title: "How Is IQ Measured? Test Formats and Norming, Explained",
+  description:
+    "How standardized cognitive tests are actually built and scored — subtests, norming against a population, and why that's harder than it sounds.",
+  publishedAt: "2026-11-20",
+  updatedAt: "2026-11-20",
+  author: "The Cognitive Assessment Platform Team",
+  relatedCategorySlug: "pattern-recognition-test",
+};
+
+import Link from "next/link";
+
+Measuring intelligence reliably takes more than writing a list of hard
+questions. Clinically-used tests go through years of development before
+they're considered valid — here's the actual process, in plain language.
+
+## 1. Build subtests for distinct cognitive domains
+
+A real test, like the Wechsler Adult Intelligence Scale, isn't one block
+of questions — it's a set of subtests, each targeting a different ability
+(vocabulary, working memory, processing speed, visual puzzle-solving).
+Keeping them separate lets the test report a profile, not just one number
+— someone can be well above average on verbal reasoning and only average
+on processing speed, and a single composite score would hide that.
+
+## 2. Pilot the questions on a large, representative sample
+
+Before a question counts for anything, it's tested on thousands of
+people across different ages, backgrounds, and regions. Questions that
+turn out to be ambiguous, culturally loaded, or that don't actually
+correlate with the rest of the subtest get thrown out. This piloting
+phase is where most of the actual cost and time of building a real test
+goes.
+
+## 3. Norm the score against that sample
+
+Once the final item set is fixed, the test is given to a large norming
+sample, and that sample's results become the reference distribution — the
+famous "mean 100, standard deviation 15" bell curve is a description of
+that reference group's scores, not a property of intelligence itself. Your
+raw number of correct answers only becomes a meaningful "IQ" once it's
+placed on that distribution.
+
+## 4. Check reliability and validity
+
+A test also has to prove it gives consistent results if you take it twice
+(reliability) and that it actually measures reasoning ability rather than,
+say, reading speed or test-taking familiarity (validity). Published tests
+report these statistics; an online quiz that skips this step is skipping
+the part that makes a score trustworthy in the first place.
+
+## Why this matters for anything you take online
+
+Most free online "IQ tests" — including, currently, this one — skip step
+3 and 4 entirely: there's no large norming sample behind the number, so
+it can't honestly claim to be "IQ" in the standardized sense. That's
+exactly why we call our result an{" "}
+<Link href="/how-iq-is-calculated">Estimated Cognitive Performance Score</Link>{" "}
+and explain precisely what does and doesn't go into it, rather than
+borrowing the authority of a scale we haven't earned.
+
+What we do keep from the real methodology: separate scoring by category
+(see our{" "}
+<Link href="/pattern-recognition-test">pattern recognition</Link> and
+other category pages) and a single, versioned, server-side scoring
+algorithm applied identically to everyone — no subjectivity, no manual
+grading.
+
+<Link href="/register">Take the assessment</Link> to see your own
+category-by-category breakdown.
+
+---
+
+Sources: Wechsler, D. (2008). *Wechsler Adult Intelligence Scale* (4th
+ed.). Cattell, R. B., & Horn, J. L. (1978). A check on the theory of
+fluid and crystallized intelligence with description of new subtest
+designs. *Journal of Educational Measurement*, 15(3), 139–164.

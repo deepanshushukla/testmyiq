@@ -1,0 +1,508 @@
+// Schema per docs/DATABASE.md. UUID primary keys, UTC timestamps
+// (Prisma/Postgres `timestamptz` defaults to UTC storage), explicit
+// foreign keys, unique constraints, and indexes matching the access
+// patterns documented in docs/PERFORMANCE.md §4.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums ----------
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum VerificationType {
+  OTP
+  MAGIC_LINK
+}
+
+// Added post-Phase-11 — see docs/ARCHITECTURE.md decision log and
+// docs/PRD.md §7 for why social login was reversed from a non-goal.
+enum OAuthProvider {
+  GOOGLE
+  LINKEDIN
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum QuestionStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+// STANDARD: a normal scored question. STIMULUS: a non-scored "memorize
+// this" screen shown earlier in an attempt. RECALL: a scored question
+// whose correct answer depends on a specific STIMULUS, asked later in the
+// same attempt — real delayed-recall memory testing, not just
+// "memorize and answer in the same breath."
+enum QuestionKind {
+  STANDARD
+  STIMULUS
+  RECALL
+}
+
+enum AssessmentStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  SUBMITTED
+  EXPIRED
+}
+
+// docs/REFERRAL_RULES.md §1
+enum ResultAccessState {
+  FREE_ACCESS
+  LOCKED
+  REFERRAL_PENDING
+  PAYMENT_PENDING
+  UNLOCKED_BY_REFERRAL
+  UNLOCKED_BY_PAYMENT
+  RESULT_VIEWED
+}
+
+enum PaymentProviderName {
+  STRIPE
+}
+
+enum PaymentStatus {
+  INITIATED
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum UnlockMethod {
+  FREE
+  PAYMENT
+  REFERRAL
+}
+
+// docs/REFERRAL_RULES.md §2
+enum ReferralQualificationStatus {
+  PENDING
+  QUALIFIED
+  DISQUALIFIED
+}
+
+enum LeaderboardPeriod {
+  GLOBAL
+  WEEKLY
+  MONTHLY
+}
+
+enum XpReason {
+  ASSESSMENT_COMPLETED
+  REFERRAL_QUALIFIED
+  BADGE_BONUS
+  DAILY_CHALLENGE
+}
+
+// ---------- Core identity ----------
+
+model User {
+  id                     String    @id @default(uuid())
+  email                  String    @unique
+  displayName            String?
+  role                   Role      @default(USER)
+  emailVerifiedAt        DateTime?
+  isFreeTierEligible     Boolean   @default(false)
+  freeTierRank           Int?
+  publicLeaderboardOptIn Boolean   @default(true)
+  // Captured at registration only, for the referral anti-abuse heuristic
+  // (docs/REFERRAL_RULES.md §4.3) — never updated afterward.
+  registrationIp         String?
+  deletedAt              DateTime?
+  // Stop condition for weekly reminders (requirement.txt §2.4 "Stop after
+  // account deletion or unsubscribe") — set only via the unsubscribe link
+  // in a reminder email, never anywhere else.
+  reminderUnsubscribedAt DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  sessions           UserSession[]
+  emailVerifications EmailVerification[]
+  oauthAccounts      OAuthAccount[]
+  assessments        Assessment[]
+  referralCode       ReferralCode?
+  referralsMade      Referral[]          @relation("ReferralsMade")
+  referralReceived   Referral?           @relation("ReferralReceived")
+  payments           Payment[]
+  emailReminders     EmailReminder[]
+  userAchievements   UserAchievement[]
+  xpTransactions     XpTransaction[]
+  leaderboardEntries LeaderboardEntry[]
+  auditLogs          AuditLog[]
+
+  @@index([email])
+}
+
+model UserSession {
+  id               String    @id @default(uuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionTokenHash String    @unique
+  userAgent        String?
+  ipAddress        String?
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model EmailVerification {
+  id         String           @id @default(uuid())
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       VerificationType
+  codeHash   String?
+  tokenHash  String?
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime         @default(now())
+
+  @@index([userId, type])
+  @@index([codeHash])
+  @@index([tokenHash])
+}
+
+// A separate table, not columns on User, so a user can eventually link
+// more than one provider to the same account. providerAccountId is the
+// provider's own stable subject id (Google `sub` / LinkedIn `sub`), never
+// the email — emails can change on the provider's side, subject ids don't.
+model OAuthAccount {
+  id                String        @id @default(uuid())
+  userId            String
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          OAuthProvider
+  providerAccountId String
+  email             String
+  createdAt         DateTime      @default(now())
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// ---------- Question bank ----------
+
+model QuestionCategory {
+  id        String     @id @default(uuid())
+  name      String
+  slug      String     @unique
+  questions Question[]
+}
+
+model Question {
+  id                         String           @id @default(uuid())
+  questionText               String
+  imageUrl                   String?
+  difficulty                 Difficulty
+  categoryId                 String
+  category                   QuestionCategory @relation(fields: [categoryId], references: [id])
+  explanation                String
+  expectedSolvingTimeSeconds Int
+  scoringWeight              Decimal          @db.Decimal(4, 2)
+  status                     QuestionStatus   @default(DRAFT)
+  version                    Int              @default(1)
+  kind                       QuestionKind     @default(STANDARD)
+  // Set only on a RECALL question, pointing at its STIMULUS. @unique
+  // because one stimulus pairs with exactly one recall question.
+  stimulusQuestionId         String?          @unique
+  stimulusQuestion           Question?        @relation("StimulusRecallPair", fields: [stimulusQuestionId], references: [id])
+  recallQuestion             Question?        @relation("StimulusRecallPair")
+  createdAt                  DateTime         @default(now())
+  updatedAt                  DateTime         @updatedAt
+
+  options             QuestionOption[]
+  assessmentQuestions AssessmentQuestion[]
+
+  @@index([status, difficulty])
+  @@index([categoryId])
+}
+
+model QuestionOption {
+  id         String   @id @default(uuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  label      String
+  optionText String
+  isCorrect  Boolean  @default(false)
+  sortOrder  Int
+
+  @@index([questionId])
+}
+
+// ---------- Assessment engine ----------
+
+model AssessmentTemplate {
+  id                   String   @id @default(uuid())
+  name                 String
+  version              Int      @default(1)
+  durationMinutes      Int
+  totalQuestions       Int
+  easyCount            Int
+  mediumCount          Int
+  hardCount            Int
+  categoryDistribution Json
+  scoringWeights       Json
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+
+  assessments Assessment[]
+
+  @@index([isActive])
+}
+
+model Assessment {
+  id          String             @id @default(uuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  templateId  String
+  template    AssessmentTemplate @relation(fields: [templateId], references: [id])
+  status      AssessmentStatus   @default(NOT_STARTED)
+  startedAt   DateTime?
+  expiresAt   DateTime?
+  submittedAt DateTime?
+  createdAt   DateTime           @default(now())
+
+  questions      AssessmentQuestion[]
+  result         AssessmentResult?
+  payments       Payment[]
+  emailReminders EmailReminder[]
+
+  @@index([userId, status])
+}
+
+model AssessmentQuestion {
+  id           String     @id @default(uuid())
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  questionId   String
+  question     Question   @relation(fields: [questionId], references: [id])
+  displayOrder Int
+  optionsOrder Json
+
+  answer AssessmentAnswer?
+
+  @@unique([assessmentId, questionId])
+}
+
+model AssessmentAnswer {
+  id                   String             @id @default(uuid())
+  assessmentQuestionId String             @unique
+  assessmentQuestion   AssessmentQuestion @relation(fields: [assessmentQuestionId], references: [id], onDelete: Cascade)
+  selectedOptionId     String?
+  markedForReview      Boolean            @default(false)
+  answeredAt           DateTime           @default(now())
+}
+
+model AssessmentResult {
+  id                    String            @id @default(uuid())
+  assessmentId          String            @unique
+  assessment            Assessment        @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  rawScore              Decimal           @db.Decimal(6, 2)
+  accuracyPercentage    Decimal           @db.Decimal(5, 2)
+  correctCount          Int
+  incorrectCount        Int
+  unansweredCount       Int
+  difficultyBreakdown   Json
+  categoryBreakdown     Json
+  completionTimeSeconds Int
+  estimatedScore        Decimal           @db.Decimal(6, 2)
+  scoringVersion        String
+  resultAccessState     ResultAccessState
+  resultViewedAt        DateTime?
+  createdAt             DateTime          @default(now())
+
+  resultUnlock         ResultUnlock?
+  shareableCertificate ShareableCertificate?
+
+  @@index([resultAccessState])
+}
+
+// ---------- Referrals ----------
+
+model ReferralCode {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      String   @unique
+  createdAt DateTime @default(now())
+
+  referrals Referral[]
+}
+
+model Referral {
+  id             String       @id @default(uuid())
+  referrerUserId String
+  referrer       User         @relation("ReferralsMade", fields: [referrerUserId], references: [id], onDelete: Cascade)
+  referredUserId String       @unique
+  referred       User         @relation("ReferralReceived", fields: [referredUserId], references: [id], onDelete: Cascade)
+  referralCodeId String
+  referralCode   ReferralCode @relation(fields: [referralCodeId], references: [id])
+  createdAt      DateTime     @default(now())
+
+  qualification ReferralQualification?
+
+  @@index([referrerUserId])
+}
+
+model ReferralQualification {
+  id                 String                      @id @default(uuid())
+  referralId         String                      @unique
+  referral           Referral                    @relation(fields: [referralId], references: [id], onDelete: Cascade)
+  status             ReferralQualificationStatus @default(PENDING)
+  qualifiedAt        DateTime?
+  disqualifiedReason String?
+  // Flag, not block (docs/REFERRAL_RULES.md §4.3) — qualification still
+  // proceeds; this just surfaces the referral for admin review.
+  flaggedSuspicious  Boolean                     @default(false)
+  createdAt          DateTime                    @default(now())
+  updatedAt          DateTime                    @updatedAt
+
+  @@index([status])
+}
+
+model ResultUnlock {
+  id                 String           @id @default(uuid())
+  assessmentResultId String           @unique
+  assessmentResult   AssessmentResult @relation(fields: [assessmentResultId], references: [id], onDelete: Cascade)
+  unlockMethod       UnlockMethod
+  unlockedAt         DateTime         @default(now())
+}
+
+// ---------- Payments ----------
+
+model Payment {
+  id                String              @id @default(uuid())
+  userId            String
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assessmentId      String
+  assessment        Assessment          @relation(fields: [assessmentId], references: [id])
+  provider          PaymentProviderName @default(STRIPE)
+  providerPaymentId String?             @unique
+  amountCents       Int
+  currency          String              @default("usd")
+  status            PaymentStatus       @default(INITIATED)
+  idempotencyKey    String              @unique
+  webhookEventId    String?             @unique
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ---------- Email reminders ----------
+
+model EmailReminder {
+  id             String     @id @default(uuid())
+  userId         String
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assessmentId   String
+  assessment     Assessment @relation(fields: [assessmentId], references: [id])
+  reminderNumber Int
+  sentAt         DateTime   @default(now())
+  deliveryStatus String     @default("sent")
+  openedAt       DateTime?
+  clickedAt      DateTime?
+
+  @@unique([userId, reminderNumber])
+}
+
+// ---------- Gamification ----------
+
+model Achievement {
+  id          String  @id @default(uuid())
+  code        String  @unique
+  name        String
+  description String
+  icon        String?
+
+  userAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+  earnedAt      DateTime    @default(now())
+
+  @@unique([userId, achievementId])
+}
+
+model XpTransaction {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount      Int
+  reason      XpReason
+  referenceId String
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, reason, referenceId])
+}
+
+model LeaderboardEntry {
+  id        String            @id @default(uuid())
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  period    LeaderboardPeriod
+  periodKey String
+  xpTotal   Int
+  rank      Int
+  updatedAt DateTime          @updatedAt
+
+  @@unique([userId, period, periodKey])
+  @@index([period, periodKey, rank])
+}
+
+// ---------- Sharing ----------
+
+model ShareableCertificate {
+  id                 String           @id @default(uuid())
+  assessmentResultId String           @unique
+  assessmentResult   AssessmentResult @relation(fields: [assessmentResultId], references: [id], onDelete: Cascade)
+  publicSlug         String           @unique
+  ogImageUrl         String?
+  visibilitySettings Json
+  createdAt          DateTime         @default(now())
+}
+
+// ---------- Platform ----------
+
+model SystemSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorUserId String?
+  actor       User?    @relation(fields: [actorUserId], references: [id])
+  action      String
+  entityType  String
+  entityId    String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([action])
+}

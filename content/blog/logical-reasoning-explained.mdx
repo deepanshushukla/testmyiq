@@ -1,0 +1,62 @@
+export const frontmatter = {
+  title: "Logical Reasoning Explained — Syllogisms, Conditionals, and Common Traps",
+  description:
+    "A deeper look at logical reasoning questions: syllogisms, conditional (if-then) logic, and the specific traps that make easy-looking questions hard.",
+  publishedAt: "2026-11-20",
+  updatedAt: "2026-11-20",
+  author: "The Cognitive Assessment Platform Team",
+  relatedCategorySlug: "logical-reasoning-test",
+};
+
+import Link from "next/link";
+
+Logical reasoning questions ask you to draw a conclusion that *must* be
+true given a set of statements — no outside knowledge, no assumptions
+about what's "usually" true in the real world.
+
+## Syllogisms: the classic form
+
+A syllogism gives you two premises and asks what necessarily follows:
+
+> All cats are mammals. All mammals are animals. Therefore, all cats are
+> animals.
+
+That's valid — the conclusion is forced by the premises. But validity is
+about structure, not content:
+
+> All cats are purple. All purple things can fly. Therefore, all cats can
+> fly.
+
+This is also logically valid — *if* both premises were true, the
+conclusion would have to follow — even though every premise is obviously
+false in reality. Tests use absurd premises like this deliberately, to
+separate "is this a valid argument" from "is this true in real life."
+
+## Conditional logic: if-then chains
+
+The second major form is conditional reasoning:
+
+> If it rains, the game is cancelled. The game was not cancelled.
+
+What can you conclude? It did not rain. This is a valid inference pattern
+called *modus tollens* (denying the consequent). A common trap is the
+reverse: "If it rains, the game is cancelled. It did not rain. Therefore
+the game was not cancelled" — that does **not** follow, because the game
+could be cancelled for an unrelated reason (the conditional only tells
+you what rain causes, not what else might).
+
+## The trap most people fall into
+
+The single most common mistake is importing real-world plausibility into
+a problem that's purely about structure. If a premise says "no mammals
+can fly," and the question asks about a hypothetical flying mammal, the
+*logically correct* move is to follow the stated rule exactly, even
+though you know real bats exist. Tests are checking whether you can
+reason from the stated premises alone.
+
+## Try it yourself
+
+Our <Link href="/logical-reasoning-test">logical reasoning test page</Link>{" "}
+has a free sample question in this style, with a full explanation. Logical
+reasoning is one of 10 categories scored in the full assessment —{" "}
+<Link href="/register">take it</Link> to see how you do across all of them.

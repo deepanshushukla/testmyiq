@@ -1,0 +1,1067 @@
+# MASTER DEVELOPMENT PROMPT
+# Build a Premium Online IQ & Cognitive Assessment Platform
+
+You are acting as a Principal Software Engineer, Product Architect, Senior UI/UX Designer, SEO Specialist and Performance Engineer.
+
+Your responsibility is to design and build a complete, production-ready online cognitive assessment platform inspired by the user experience of https://myiq.com/.
+
+This is not a simple quiz application. It is a consumer-facing product with assessment functionality, monetization, referrals, gamification, social sharing, SEO-driven acquisition and strong performance requirements.
+
+You must think about product quality, scalability, security, maintainability, SEO and conversion optimization throughout development.
+
+Do not simply generate UI screens. Build a functional application with proper backend logic, database persistence, authentication, business rules and automated tests.
+
+The product name is undecided. Use a configurable placeholder and avoid hardcoding branding throughout the codebase.
+
+---
+
+# PART 1: PRODUCT VISION
+
+Build a platform where users can take a challenging, timed cognitive assessment and discover how they perform across different reasoning abilities.
+
+Users should be able to:
+
+1. Register and log in using email.
+2. Verify their email using OTP or magic link.
+3. Take a challenging, timed assessment.
+4. Answer questions of varying difficulty.
+5. Receive a detailed performance report.
+6. Unlock their report through payment or referrals.
+7. Share their achievements on social platforms.
+8. Earn XP, badges and achievements.
+9. Compare their performance through leaderboards.
+10. Access the application seamlessly on mobile and desktop.
+
+The experience should feel premium, modern, intelligent and engaging.
+
+Reference the overall experience of MyIQ, but do not copy its branding, copyrighted questions, illustrations, text or proprietary designs.
+
+All questions, content and visual assets must be original or appropriately licensed.
+
+IMPORTANT: Until a scientifically validated scoring and norming methodology exists, describe the output as an estimated cognitive performance score rather than a clinically or professionally validated IQ score.
+
+---
+
+# PART 2: BUSINESS RULES
+
+These are non-negotiable product requirements.
+
+## 2.1 First 10 users get free results
+
+The first 10 successfully registered and email-verified users receive complimentary result access.
+
+They can:
+- Register.
+- Verify their email.
+- Complete their assessment.
+- View their complete results immediately.
+- Review their answers.
+- Share their achievements.
+
+No payment or referral is required.
+
+The free allocation must be atomic and race-safe.
+
+Two users registering simultaneously around the free-user limit must never result in more than 10 complimentary allocations.
+
+Registration sequence and eligibility must be maintained on the backend.
+
+## 2.2 Users after the first 10
+
+Every subsequent user must complete the assessment before accessing the complete report.
+
+They have two options.
+
+### Option A: Pay $1
+
+After completing the assessment, the user can unlock their report immediately by paying $1 USD.
+
+Payment workflow:
+
+1. User completes the assessment.
+2. Backend evaluates and persists the result.
+3. User sees the locked-result screen.
+4. User selects "Unlock My Results – $1".
+5. Payment gateway handles the transaction.
+6. Backend verifies payment through a signed webhook.
+7. Result is unlocked.
+8. User receives a confirmation email.
+9. User can access and share their report.
+
+Payment must be secure and idempotent.
+
+Never trust a frontend payment-success callback.
+
+Handle:
+- Successful payments.
+- Failed payments.
+- Pending payments.
+- Duplicate webhooks.
+- Refunds.
+- Payment retries.
+
+The payment gateway must be configurable.
+
+### Option B: Unlock for free through referrals
+
+Users can unlock their results by referring two people.
+
+A referral is qualified only when the referred user:
+
+1. Registers using the referral link or code.
+2. Verifies their email.
+3. Completes their assessment.
+4. Passes anti-abuse checks.
+
+Registration alone does not count.
+
+Referral requirements:
+- Unique referral codes.
+- Referral attribution during registration.
+- Immutable referral relationships.
+- No self-referrals.
+- No duplicate qualifications.
+- Two distinct qualified users required.
+- Transaction-safe qualification.
+- Automatic result unlocking.
+- Referral progress tracking.
+
+Existing qualified referrals must never be lost.
+
+## 2.3 Result access state
+
+Implement result-access state separately from payment state.
+
+Suggested states:
+
+- FREE_ACCESS
+- LOCKED
+- REFERRAL_PENDING
+- PAYMENT_PENDING
+- UNLOCKED_BY_REFERRAL
+- UNLOCKED_BY_PAYMENT
+- RESULT_VIEWED
+
+Make transitions explicit and testable.
+
+## 2.4 Weekly email reminders
+
+Users who have completed their assessment but haven't unlocked and viewed their results should receive a reminder every seven days.
+
+Email content should remind them of two options:
+
+- Unlock instantly for $1.
+- Invite two friends to unlock for free.
+
+Rules:
+- First reminder after seven days.
+- Repeat every seven days.
+- Stop when results are unlocked and viewed.
+- Stop after account deletion or unsubscribe.
+- Never send duplicate reminders.
+- Use a background job queue.
+- Track delivery and engagement.
+
+Make the interval and maximum reminder count configurable.
+
+---
+
+# PART 3: QUESTION BANK AND ASSESSMENT ENGINE
+
+Create an initial question bank of 300 original questions.
+
+| Difficulty | Count |
+|---|---:|
+| Easy | 100 |
+| Medium | 100 |
+| Hard | 100 |
+| Total | 300 |
+
+Question categories:
+
+- Logical reasoning.
+- Numerical reasoning.
+- Abstract reasoning.
+- Spatial reasoning.
+- Pattern recognition.
+- Matrix reasoning.
+- Deductive reasoning.
+- Visual reasoning.
+- Sequence completion.
+- Memory and attention.
+
+Support:
+- Multiple-choice questions.
+- Number sequences.
+- Visual patterns.
+- Shape and matrix puzzles.
+- Spatial rotations.
+- Odd-one-out.
+- Symbol-based reasoning.
+
+Each question must contain:
+- ID.
+- Question text.
+- Optional image.
+- Difficulty.
+- Cognitive category.
+- Options.
+- Correct answer.
+- Explanation.
+- Expected solving time.
+- Scoring weight.
+- Publication status.
+- Version information.
+
+Do not expose correct answers or explanations through the public question API.
+
+## Assessment configuration
+
+Initial assessment:
+
+- 30 questions.
+- 10 easy.
+- 10 medium.
+- 10 hard.
+- 20-minute duration.
+
+Make these values configurable through the admin panel.
+
+The system should:
+- Randomly select questions.
+- Prevent duplicate questions within an attempt.
+- Randomize question order.
+- Randomize answer options where appropriate.
+- Maintain balanced category distribution.
+- Version assessment configurations.
+
+Do not generate questions dynamically during an active assessment.
+
+Use a reviewed question bank.
+
+---
+
+# PART 4: QUIZ EXPERIENCE
+
+Build a polished, distraction-free assessment interface.
+
+Display:
+
+- Question number.
+- Total question count.
+- Countdown timer.
+- Progress bar.
+- Difficulty level.
+- Question content.
+- Answer options.
+- Next and previous controls.
+- Mark for review.
+- Question navigation.
+
+Requirements:
+
+- One question at a time.
+- Responsive on mobile.
+- Touch-friendly controls.
+- Keyboard navigation.
+- Smooth transitions.
+- Accessible contrast.
+- Clear answered/unanswered indicators.
+
+## Timer requirements
+
+The timer must be server-authoritative.
+
+Persist:
+- Assessment start time.
+- Expiry time.
+- Current assessment status.
+
+Refreshing the browser must not reset the timer.
+
+Switching tabs must not pause the timer.
+
+Automatically submit when time expires.
+
+Persist answers incrementally.
+
+Handle temporary network failures without losing submitted answers.
+
+Prevent duplicate submissions.
+
+The frontend timer is only a visual representation of the server-authoritative deadline.
+
+---
+
+# PART 5: SCORING ENGINE
+
+Create a dedicated backend scoring module.
+
+The scoring engine should calculate:
+
+- Correct answers.
+- Incorrect answers.
+- Unanswered questions.
+- Raw score.
+- Accuracy percentage.
+- Difficulty-wise performance.
+- Category-wise performance.
+- Completion time.
+- Estimated cognitive performance score.
+
+Use difficulty-specific weights only when justified by the scoring methodology.
+
+Do not reward speed at the expense of accuracy without a documented reason.
+
+Do not label a raw percentage as IQ.
+
+The scoring engine must be independently testable.
+
+Keep the scoring methodology versioned so that future assessments can evolve without modifying historical results.
+
+---
+
+# PART 6: RESULTS EXPERIENCE
+
+Create a visually impressive report.
+
+Include:
+
+- Large score reveal.
+- Performance category.
+- Accuracy percentage.
+- Completion time.
+- Category breakdown.
+- Difficulty breakdown.
+- Correct/incorrect summary.
+- Answer explanations.
+- Performance insights.
+- Improvement suggestions.
+- Share achievement CTA.
+
+Use charts and visualizations where they provide real value.
+
+Clearly distinguish between:
+- Raw performance.
+- Estimated cognitive score.
+- Percentile, only when reliable normative data exists.
+
+## Locked result experience
+
+Users who are not eligible for free access must not see their actual score before unlocking.
+
+Show:
+
+"Your assessment is complete. Your results are waiting!"
+
+Display:
+- Completion confirmation.
+- Questions attempted.
+- Time taken.
+- XP earned.
+- Referral progress.
+
+Provide two clearly visible options:
+
+"Unlock My Results – $1"
+
+"Unlock for Free – Invite 2 Friends"
+
+Do not expose the hidden score, correct-answer breakdown or complete report through frontend state, network responses or public APIs.
+
+---
+
+# PART 7: GAMIFICATION
+
+Implement:
+
+- XP.
+- Levels.
+- Badges.
+- Achievements.
+- Streaks.
+- Daily challenges.
+- Global leaderboard.
+- Weekly leaderboard.
+- Monthly leaderboard.
+
+Example levels:
+
+- Beginner.
+- Explorer.
+- Thinker.
+- Strategist.
+- Mastermind.
+
+Example badges:
+
+- First Challenge.
+- Logic Master.
+- Pattern Detective.
+- Perfect Accuracy.
+- Challenge Champion.
+- Referral Champion.
+
+XP transactions must be recorded on the backend.
+
+Prevent XP farming.
+
+Allow users to control public leaderboard visibility.
+
+---
+
+# PART 8: SOCIAL SHARING
+
+Support:
+
+- LinkedIn.
+- X.
+- WhatsApp.
+- Facebook.
+- Telegram.
+- Native Web Share API.
+- Copy link.
+
+Before unlocking:
+- Users can share a generic invitation.
+- Never reveal the hidden score.
+
+After unlocking:
+- Generate personalized result cards.
+- Include user-approved information.
+- Generate a unique public verification URL.
+- Create optimized Open Graph images.
+- Include a CTA to take the assessment.
+
+Do not automatically publish on behalf of users without authorization.
+
+Public result pages must respect user privacy preferences.
+
+---
+
+# PART 9: ADMIN PANEL
+
+Create a protected admin dashboard.
+
+## Question management
+- Create.
+- Edit.
+- Archive.
+- Publish.
+- Upload images.
+- Manage explanations.
+- Assign categories.
+- Assign difficulty.
+- Bulk import.
+- Preview.
+
+## Assessment management
+- Configure duration.
+- Configure question count.
+- Configure difficulty distribution.
+- Configure categories.
+- Configure scoring weights.
+- Configure retake rules.
+
+## Referral management
+- View referrals.
+- View qualification status.
+- Detect suspicious activity.
+- Configure referral requirements.
+- View result unlocks.
+
+## Payment management
+- View transactions.
+- View failures.
+- View refunds.
+- View revenue.
+- Audit payment events.
+
+## Platform analytics
+- Registrations.
+- Verified users.
+- Assessment starts.
+- Assessment completions.
+- Referral conversions.
+- Paid unlocks.
+- Free unlocks.
+- Revenue.
+- Reminder engagement.
+
+---
+
+# PART 10: SEO — TOP PRIORITY
+
+SEO is a first-class product requirement.
+
+Do not postpone SEO until the application is complete.
+
+Build the public-facing pages using SEO-friendly server rendering.
+
+Use Next.js App Router with Server Components by default.
+
+## Target search intent
+
+Primary:
+- Free IQ test.
+- Online IQ test.
+- IQ test online.
+- Test your IQ.
+- Cognitive assessment.
+
+Secondary:
+- Logical reasoning test.
+- Abstract reasoning test.
+- Spatial reasoning test.
+- Numerical reasoning test.
+- Pattern recognition test.
+- Brain puzzles.
+
+Create keyword research and content mapping before producing SEO content.
+
+## Public landing pages
+
+Implement:
+
+- `/`
+- `/free-iq-test`
+- `/online-iq-test`
+- `/logical-reasoning-test`
+- `/abstract-reasoning-test`
+- `/numerical-reasoning-test`
+- `/spatial-reasoning-test`
+- `/pattern-recognition-test`
+- `/how-it-works`
+- `/how-iq-is-calculated`
+- `/pricing`
+- `/faq`
+- `/blog`
+
+Every page must contain original, helpful and search-intent-specific content.
+
+Do not create thin, duplicate pages simply to target keywords.
+
+## Technical SEO requirements
+
+Implement:
+
+- Server-side rendering.
+- Static generation where suitable.
+- Dynamic metadata.
+- Unique title tags.
+- Unique meta descriptions.
+- Canonical URLs.
+- XML sitemap.
+- Robots.txt.
+- Open Graph.
+- Twitter/X cards.
+- Semantic HTML.
+- Breadcrumbs.
+- Structured data.
+- Clean URLs.
+- Image alt text.
+- Proper redirects.
+- Custom 404 pages.
+
+Generate sitemap automatically from published content.
+
+Keep private routes out of the sitemap and search index.
+
+Add appropriate noindex directives to:
+- Login.
+- Registration.
+- Admin.
+- Dashboard.
+- Active assessments.
+- Private results.
+- Payment callbacks.
+
+Avoid indexing referral tracking parameters and duplicate URL variations.
+
+## Structured data
+
+Use accurate JSON-LD where applicable:
+
+- Organization.
+- WebSite.
+- WebPage.
+- BreadcrumbList.
+- Article.
+
+Only publish schema supported by visible page content.
+
+Do not create fake ratings, reviews or scientific certifications.
+
+## Content marketing
+
+Build a blog and educational content system.
+
+Initial topics:
+
+1. What Is IQ?
+2. How Is IQ Measured?
+3. What Is a Good IQ Score?
+4. How Accurate Are Online IQ Tests?
+5. Logical Reasoning Explained.
+6. Abstract Reasoning Explained.
+7. Spatial Reasoning Questions.
+8. Number Sequence Puzzles.
+9. Matrix Reasoning Questions.
+10. IQ vs EQ.
+11. What Does a Cognitive Assessment Measure?
+12. How to Improve Logical Thinking.
+
+Every article should:
+- Be original.
+- Provide examples.
+- Include diagrams where useful.
+- Have proper headings.
+- Link to relevant landing pages.
+- Include a clear CTA.
+- Include authorship and update information.
+- Cite reliable sources for scientific claims.
+
+Avoid mass-generated AI content.
+
+---
+
+# PART 11: MARKETING AND ORGANIC GROWTH
+
+Implement growth mechanisms directly into the product.
+
+## Referral growth loop
+
+1. User discovers the product.
+2. Registers.
+3. Completes assessment.
+4. Unlocks their report.
+5. Shares their achievement.
+6. Friends visit the platform.
+7. Friends take the assessment.
+8. The cycle repeats.
+
+## Daily challenge
+
+Create a daily public reasoning puzzle.
+
+Requirements:
+- One original puzzle daily.
+- Public access without registration.
+- Immediate explanation.
+- Shareable URL.
+- CTA to take the full assessment.
+
+Create meaningful indexable challenge pages only when they contain sufficient unique content.
+
+## Analytics
+
+Integrate:
+- Google Analytics 4.
+- Google Search Console.
+- Google Tag Manager if necessary.
+- New Relic Browser monitoring.
+
+Track:
+
+- Landing page views.
+- CTA clicks.
+- Signup started/completed.
+- Assessment started/completed.
+- Result locked.
+- Payment started/completed.
+- Referral shared/qualified.
+- Result unlocked.
+- Result viewed.
+- Social share clicks.
+
+Use UTM parameters.
+
+Never send private answers, email addresses or sensitive result information to third-party analytics.
+
+---
+
+# PART 12: PERFORMANCE — NON-NEGOTIABLE
+
+The application must be fast on mobile and desktop.
+
+Target Core Web Vitals:
+
+| Metric | Good threshold |
+|---|---:|
+| LCP | ≤ 2.5 seconds |
+| INP | ≤ 200 ms |
+| CLS | ≤ 0.1 |
+
+Measure at the 75th percentile for actual users.
+
+## Frontend performance
+
+- Use Server Components by default.
+- Minimize client-side JavaScript.
+- Use dynamic imports.
+- Use route-level code splitting.
+- Avoid unnecessary React re-renders.
+- Optimize images.
+- Use AVIF/WebP.
+- Optimize fonts.
+- Lazy-load below-the-fold assets.
+- Avoid unnecessary third-party scripts.
+- Analyze bundles.
+- Keep the homepage lightweight.
+
+Initial performance budgets:
+
+- Homepage JavaScript target: ≤ 150 KB compressed.
+- Critical CSS target: ≤ 50 KB compressed.
+
+Validate actual results rather than assuming these targets are automatically met.
+
+## Backend performance
+
+- PostgreSQL indexing.
+- Connection pooling.
+- Avoid N+1 queries.
+- Redis where beneficial.
+- Background jobs.
+- Efficient pagination.
+- API compression where appropriate.
+- Query monitoring.
+- Rate limiting.
+- Structured logging.
+
+## Quiz performance
+
+- Efficient question rendering.
+- Minimal state updates.
+- Efficient timer implementation.
+- Incremental answer persistence.
+- Graceful network failure recovery.
+- Avoid re-rendering the entire question list every second.
+
+## Monitoring
+
+Integrate New Relic or equivalent.
+
+Monitor:
+- Core Web Vitals.
+- Frontend errors.
+- API latency.
+- HTTP error rate.
+- Database latency.
+- CPU and memory.
+- Node.js event loop lag.
+- Background job failures.
+- Payment failures.
+- Email delivery failures.
+
+---
+
+# PART 13: SECURITY
+
+Implement:
+
+- Secure email authentication.
+- Server-side authorization.
+- Role-based access control.
+- Rate limiting.
+- Input validation.
+- Output encoding.
+- Secure session handling.
+- CSRF protection where applicable.
+- SQL injection prevention.
+- Payment webhook signature verification.
+- Assessment ownership validation.
+- Referral fraud prevention.
+- Private result protection.
+- Audit logging.
+
+Never trust the frontend for:
+- Scores.
+- Assessment deadlines.
+- Referral qualifications.
+- Payment status.
+- Free-user eligibility.
+- Result unlock permissions.
+
+All critical business decisions must be enforced by the backend.
+
+---
+
+# PART 14: RECOMMENDED TECHNOLOGY STACK
+
+Use the following stack unless the existing repository provides a compelling reason to use an alternative.
+
+Frontend:
+- Next.js App Router.
+- React.
+- TypeScript.
+- Tailwind CSS.
+- Reusable accessible components.
+
+Backend:
+- Node.js.
+- TypeScript.
+- NestJS or modular Express.
+
+Database:
+- PostgreSQL.
+- Prisma ORM.
+
+Infrastructure:
+- Redis.
+- Background job queue.
+- Cloudflare CDN.
+- Object storage.
+- Email provider.
+- Configurable payment gateway.
+
+Monitoring:
+- New Relic.
+- Structured JSON logging.
+- OpenTelemetry where appropriate.
+
+Testing:
+- Vitest or Jest.
+- React Testing Library.
+- Playwright.
+- API integration tests.
+
+Use strict TypeScript.
+
+Avoid `any` unless absolutely necessary and documented.
+
+Do not introduce unnecessary dependencies.
+
+---
+
+# PART 15: DATABASE DESIGN
+
+Design a normalized schema covering:
+
+- users
+- user_sessions
+- email_verifications
+- questions
+- question_options
+- question_categories
+- assessment_templates
+- assessments
+- assessment_questions
+- assessment_answers
+- assessment_results
+- referral_codes
+- referrals
+- referral_qualifications
+- result_unlocks
+- payments
+- email_reminders
+- achievements
+- user_achievements
+- xp_transactions
+- leaderboard_entries
+- shareable_certificates
+- system_settings
+- audit_logs
+
+Requirements:
+- UUID primary keys.
+- Proper foreign keys.
+- Unique constraints.
+- Indexes.
+- UTC timestamps.
+- Transactional referral qualification.
+- Transactional free-user allocation.
+- Idempotent unlock operations.
+- Immutable assessment submissions.
+- Versioned question and scoring logic.
+
+Produce an ER diagram before implementing the database.
+
+---
+
+# PART 16: DEVELOPMENT WORKFLOW
+
+This is extremely important.
+
+Do not attempt to implement the entire application in one enormous operation.
+
+Follow this workflow.
+
+## Step 1: Inspect the repository
+
+Before changing anything:
+- Inspect the current directory.
+- Understand existing project structure.
+- Check package.json.
+- Check installed dependencies.
+- Check existing configuration.
+- Identify existing implementation.
+- Identify missing features.
+
+Do not overwrite working code without understanding it.
+
+If the repository is empty, initialize the project.
+
+## Step 2: Create project documentation
+
+Create:
+
+- `docs/PRD.md`
+- `docs/ARCHITECTURE.md`
+- `docs/DATABASE.md`
+- `docs/API.md`
+- `docs/REFERRAL_RULES.md`
+- `docs/SCORING.md`
+- `docs/SEO_STRATEGY.md`
+- `docs/PERFORMANCE.md`
+- `docs/DEVELOPMENT_ROADMAP.md`
+
+Create:
+- `CLAUDE.md` for Claude Code project instructions.
+- `AGENTS.md` for Codex project instructions.
+
+Keep these files consistent.
+
+## Step 3: Create implementation plan
+
+Break development into independently testable phases.
+
+For each phase, identify:
+- Files to create.
+- Database changes.
+- API changes.
+- Frontend changes.
+- Dependencies.
+- Tests.
+- Acceptance criteria.
+
+Do not start all phases simultaneously.
+
+## Step 4: Implement incrementally
+
+Recommended order:
+
+1. Project foundation and design system.
+2. Database and authentication.
+3. Landing page and SEO foundation.
+4. Question bank and admin management.
+5. Assessment engine.
+6. Scoring and result management.
+7. Referral system.
+8. Payment integration.
+9. Email notifications and reminders.
+10. Gamification.
+11. Social sharing.
+12. Analytics and monitoring.
+13. Performance optimization.
+14. Production deployment.
+
+SEO and performance must be considered from phase one, not postponed until the final phase.
+
+## Step 5: Test everything
+
+For each feature:
+- Write unit tests.
+- Write integration tests.
+- Test important edge cases.
+- Run type checks.
+- Run linting.
+- Run build.
+- Run relevant Playwright tests.
+
+Prioritize tests for:
+- First 10 free allocations.
+- Referral qualification.
+- Payment webhooks.
+- Result unlocking.
+- Assessment expiration.
+- Score evaluation.
+- Unauthorized result access.
+- Weekly email reminders.
+
+## Step 6: Maintain documentation
+
+After every phase:
+- Update architecture documentation.
+- Update API documentation.
+- Document important decisions.
+- Update the roadmap.
+- Record known limitations.
+
+Never claim a feature is complete if it only has a UI or mock implementation.
+
+---
+
+# PART 17: DEFINITION OF DONE
+
+A feature is complete only when:
+
+1. Backend functionality works.
+2. Database persistence works.
+3. Frontend integration works.
+4. Authorization is enforced.
+5. Validation is implemented.
+6. Error handling is implemented.
+7. Tests pass.
+8. Mobile experience is verified.
+9. SEO requirements are met where relevant.
+10. Performance impact is evaluated.
+11. Documentation is updated.
+
+For public pages, verify:
+- Metadata.
+- Canonical URLs.
+- Sitemap inclusion.
+- Structured data.
+- Mobile rendering.
+- Lighthouse performance.
+
+For private pages, verify:
+- Authentication.
+- Authorization.
+- No accidental indexing.
+- No private data leakage.
+
+---
+
+# PART 18: FIRST TASK — DO NOT SKIP
+
+Start by inspecting the repository.
+
+Then:
+
+1. Explain your understanding of the product.
+2. Identify existing code and infrastructure.
+3. Create the project documentation.
+4. Design the system architecture.
+5. Create the database ER diagram.
+6. Define critical business state machines.
+7. Prepare a phased development roadmap.
+8. Identify unresolved business decisions.
+9. Propose the initial folder structure.
+10. Present the implementation plan.
+
+Do not begin building all features immediately.
+
+After completing this foundation, start Phase 1.
+
+You may make reasonable assumptions where requirements are unspecified, but document them before implementation.
+
+Ask questions only when a decision materially affects architecture, security, payment, compliance or business logic.
+
+# FINAL EXPECTATION
+
+Build this as a real consumer SaaS product.
+
+Prioritize:
+
+1. Correct business logic.
+2. Assessment quality.
+3. Excellent user experience.
+4. Strong SEO.
+5. Mobile performance.
+6. Secure monetization.
+7. Organic growth.
+8. Maintainable architecture.
+
+The end result should be a polished, fast, scalable and production-ready product, not a generic AI-generated quiz website.
